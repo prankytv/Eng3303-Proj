@@ -337,17 +337,16 @@ const Checkout = ({ cart, onNavigate }) => {
             ...cart.map(item => `- ${item.name} (x${item.quantity}) - NOK ${item.price.toLocaleString('en-US')}`),
             '--------------------',
             `Total: NOK ${subtotal.toLocaleString('en-US')}`
-        ].join('\r\n'); // Using \r\n for new lines in the email body
+        ].join('\r\n');
         
         const recipientEmail = "frithjof@arngren.net";
-
-        // --- CHANGE START ---
-        // Construct a Gmail compose URL instead of a mailto link
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         
-        // Open the Gmail compose URL in a new tab
-        window.open(gmailUrl, '_blank');
-        // --- CHANGE END ---
+        const link = document.createElement('a');
+        link.href = mailtoLink;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     if (cart.length === 0) {
@@ -394,6 +393,7 @@ const Checkout = ({ cart, onNavigate }) => {
         </div>
     );
 };
+
 
 // --- STATIC SECTIONS & PAGES --- //
 const ClientReviews = () => ( <section id="client-reviews" className="client-reviews-section container section"> <h2 className="section-title">Client Reviews</h2> <p className="section-subtitle">See what our adventurous customers have to say about our unique products.</p> <div className="reviews-grid"> { [{ quote: "The electric unicycle is a game-changer... It's like living in the future.", name: "A. Johansen", company: "Tech Innovators AS" }, { quote: "I bought a build-your-own robot kit for my daughter. Fantastic time putting it together.", name: "Maria Berg", company: "Future Coders Academy" }, { quote: "Their customer service is surprisingly good for such a quirky site... got a detailed, helpful response within hours.", name: "Lars Eriksen", company: "Hobbyist's Corner" }] .map((review, index) => ( <div key={index} className="review-card"> <p>"{review.quote}"</p> <div className="review-author"> <div className="author-avatar"></div> <div className="author-info"> <h4>{review.name}</h4> <span>{review.company}</span> </div> </div> </div> ))} </div> </section> );
