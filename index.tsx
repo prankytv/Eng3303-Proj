@@ -465,15 +465,6 @@ const App = () => {
         return savedTheme || (prefersDark ? 'dark' : 'light');
     });
 
-    useEffect(() => {
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-    };
-
     const removeNotification = (id) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isExiting: true } : n));
         setTimeout(() => {
