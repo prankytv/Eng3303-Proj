@@ -459,11 +459,6 @@ const App = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [notifications, setNotifications] = useState([]);
-    const [theme, setTheme] = useState(() => {
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return savedTheme || (prefersDark ? 'dark' : 'light');
-    });
 
     const removeNotification = (id) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isExiting: true } : n));
