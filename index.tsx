@@ -1,59 +1,173 @@
 import React, { useState, useMemo, useRef, useEffect, useContext, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
 
-// --- NEW: CURRENCY CONTEXT --- //
-// Define a fixed exchange rate. In a real application, you might fetch this from an API.
+// --- TRANSLATIONS --- //
+const translations = {
+    en: {
+        nav_new_arrivals: "New Arrivals",
+        nav_client_reviews: "Client Reviews",
+        nav_faq: "FAQ",
+        nav_shipping: "Shipping & Returns",
+        nav_warranty: "Warranty",
+        nav_all_products: "All Products",
+        nav_favorites: "My Favorites",
+        nav_privacy: "Privacy Policy",
+        nav_terms: "Terms of Service",
+        hero_tagline: "The Future of Fun and Transport",
+        hero_title: "Explore Frithjof's Inventions & Gadgets",
+        hero_desc: "Discover a unique collection of electric vehicles, robots, RC toys, and futuristic gadgets. From the practical to the unbelievable, find your next adventure here.",
+        hero_cta: "All Products",
+        search_placeholder: "Search for gadgets, robots...",
+        login: "Login",
+        guest: "Guest",
+        cart_empty: "Your cart is empty.",
+        cart_title: "My Cart",
+        continue_shopping: "Continue Shopping",
+        remove: "Remove",
+        subtotal: "Subtotal",
+        total: "Total",
+        shipping_calc: "Calculated at next step",
+        checkout_btn: "Check Out",
+        checkout_title: "Checkout",
+        shipping_info: "Shipping Information",
+        full_name: "Full Name",
+        delivery_address: "Delivery Address",
+        confirm_email: "Confirm & Send Order via Email App",
+        confirm_gmail: "Confirm & Send via Gmail",
+        order_summary: "Order Summary",
+        add_to_cart: "Add to Cart",
+        back_to_products: "Back to Products",
+        product_desc_suffix: "This item is categorized under",
+        no_products: "No products found matching your criteria.",
+        fav_empty: "You haven't favorited any items yet.",
+        explore_products: "Explore Products",
+        fav_title: "My Favorites",
+        new_arrivals_title: "New Arrivals",
+        client_reviews_title: "Client Reviews",
+        client_reviews_subtitle: "See what our adventurous customers have to say about our unique products.",
+        faq_title: "Frequently Asked Questions",
+        faq_subtitle: "Have questions? We've got answers.",
+        footer_rights: "All rights reserved.",
+        shipping_returns_title: "Shipping & Returns",
+        warranty_title: "Warranty Information",
+        privacy_title: "Privacy Policy",
+        terms_title: "Terms of Service",
+        theme_light: "Light Mode",
+        theme_dark: "Dark Mode",
+        switch_lang: "Switch Language",
+        secure_checkout_alt: "Secure Checkout"
+    },
+    no: {
+        nav_new_arrivals: "Nyheter",
+        nav_client_reviews: "Kundeomtaler",
+        nav_faq: "FAQ",
+        nav_shipping: "Frakt og Retur",
+        nav_warranty: "Garanti",
+        nav_all_products: "Alle Produkter",
+        nav_favorites: "Mine Favoritter",
+        nav_privacy: "Personvern",
+        nav_terms: "Vilkår",
+        hero_tagline: "Fremtiden for Moro og Transport",
+        hero_title: "Utforsk Frithjofs Oppfinnelser og Dingser",
+        hero_desc: "Oppdag en unik samling av elektriske kjøretøy, roboter, RC-leker og futuristiske dingser. Fra det praktiske til det utrolige, finn ditt neste eventyr her.",
+        hero_cta: "Alle Produkter",
+        search_placeholder: "Søk etter dingser, roboter...",
+        login: "Logg inn",
+        guest: "Gjest",
+        cart_empty: "Handlekurven din er tom.",
+        cart_title: "Min Handlekurv",
+        continue_shopping: "Fortsett å handle",
+        remove: "Fjern",
+        subtotal: "Delsum",
+        total: "Totalt",
+        shipping_calc: "Beregnes ved neste steg",
+        checkout_btn: "Gå til Kassen",
+        checkout_title: "Kasse",
+        shipping_info: "Fraktinformasjon",
+        full_name: "Fullt Navn",
+        delivery_address: "Leveringsadresse",
+        confirm_email: "Bekreft og Send Ordre via E-post App",
+        confirm_gmail: "Bekreft og Send via Gmail",
+        order_summary: "Ordresammendrag",
+        add_to_cart: "Legg i Handlekurv",
+        back_to_products: "Tilbake til Produkter",
+        product_desc_suffix: "Denne varen er kategorisert under",
+        no_products: "Ingen produkter funnet som passer dine kriterier.",
+        fav_empty: "Du har ikke favorisert noen varer ennå.",
+        explore_products: "Utforsk Produkter",
+        fav_title: "Mine Favoritter",
+        new_arrivals_title: "Nyheter",
+        client_reviews_title: "Kundeomtaler",
+        client_reviews_subtitle: "Se hva våre eventyrlystne kunder har å si om våre unike produkter.",
+        faq_title: "Ofte Stilte Spørsmål",
+        faq_subtitle: "Har du spørsmål? Vi har svar.",
+        footer_rights: "Alle rettigheter forbeholdt.",
+        shipping_returns_title: "Frakt og Retur",
+        warranty_title: "Garantiinformasjon",
+        privacy_title: "Personvern",
+        terms_title: "Vilkår for Bruk",
+        theme_light: "Lys Modus",
+        theme_dark: "Mørk Modus",
+        switch_lang: "Bytt Språk",
+        secure_checkout_alt: "Sikker Betaling"
+    }
+};
+
+// --- NEW: LANGUAGE CONTEXT --- //
+const LanguageContext = createContext({
+    language: 'en',
+    setLanguage: (lang: string) => {},
+    t: (key: string) => key
+});
+
+export const useLanguage = () => useContext(LanguageContext);
+
+const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
+    const [language, setLanguage] = useState('en');
+
+    const t = (key) => {
+        return translations[language][key] || key;
+    };
+
+    return (
+        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+            {children}
+        </LanguageContext.Provider>
+    );
+};
+
+// --- CURRENCY CONTEXT --- //
 const NOK_TO_USD_RATE = 0.099; // 1 NOK = $0.099 USD
 
-// Create a context to hold currency information
-// FIX: Provide a default value to `createContext` to avoid type errors. The default value ensures that the context has a proper shape, preventing cascading type errors in consuming components.
 const CurrencyContext = createContext({
     currency: 'NOK',
     formatPrice: (priceInNok) => `NOK ${priceInNok.toLocaleString('en-US')}`,
 });
 
-// Create a custom hook for easy access to the context
 export const useCurrency = () => useContext(CurrencyContext);
 
-// Create a provider component to wrap the app
-// FIX: Add explicit type for children prop to satisfy TypeScript.
 const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
-    const [currency, setCurrency] = useState('NOK'); // Default to NOK
+    const { language } = useLanguage();
+    const [currency, setCurrency] = useState('USD');
 
     useEffect(() => {
-        // This function checks the language and sets the currency
-        const checkLanguage = () => {
-            const lang = document.documentElement.lang;
-            if (lang && lang.startsWith('en')) {
-                setCurrency('USD');
-            } else {
-                setCurrency('NOK');
-            }
-        };
-
-        // Run it once on initial load
-        checkLanguage();
-
-        // The Google Translate widget changes the `lang` attribute on the <html> tag.
-        // We can use a MutationObserver to "listen" for that change.
-        const observer = new MutationObserver(checkLanguage);
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-
-        // Cleanup the observer when the component unmounts
-        return () => observer.disconnect();
-    }, []);
+        // Update currency when language changes
+        if (language === 'en') {
+            setCurrency('USD');
+        } else {
+            setCurrency('NOK');
+        }
+    }, [language]);
 
     // Function to format the price based on the current currency
     const formatPrice = (priceInNok) => {
         if (currency === 'USD') {
             const priceInUsd = priceInNok * NOK_TO_USD_RATE;
-            // Format for US Dollars
             return priceInUsd.toLocaleString('en-US', {
                 style: 'currency',
                 currency: 'USD',
             });
         }
-        // Format for Norwegian Kroner
         return `NOK ${priceInNok.toLocaleString('en-US')}`;
     };
 
@@ -154,16 +268,47 @@ const MoonIcon = () => (
   </svg>
 );
 
+const TranslateIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+  </svg>
+);
+
+const FlagUS = () => (
+  <svg width="20" height="15" viewBox="0 0 22 16" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: '2px' }}>
+    <rect width="22" height="16" fill="#B22234"/>
+    <path d="M0,2 h22 M0,5 h22 M0,8 h22 M0,11 h22 M0,14 h22" stroke="#FFFFFF" strokeWidth="1.2"/>
+    <rect width="9" height="9" fill="#3C3B6E"/>
+    <g fill="#FFFFFF">
+      <circle cx="2" cy="2" r="0.8"/>
+      <circle cx="4.5" cy="2" r="0.8"/>
+      <circle cx="7" cy="2" r="0.8"/>
+      <circle cx="3.25" cy="4" r="0.8"/>
+      <circle cx="5.75" cy="4" r="0.8"/>
+      <circle cx="2" cy="6" r="0.8"/>
+      <circle cx="4.5" cy="6" r="0.8"/>
+      <circle cx="7" cy="6" r="0.8"/>
+    </g>
+  </svg>
+);
+
+const FlagNO = () => (
+  <svg width="20" height="15" viewBox="0 0 22 16" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: '2px' }}>
+    <rect width="22" height="16" fill="#BA0C2F"/>
+    <path d="M0,8 h22 M8,0 v16" stroke="#FFFFFF" strokeWidth="4"/>
+    <path d="M0,8 h22 M8,0 v16" stroke="#00205B" strokeWidth="2"/>
+  </svg>
+);
+
 
 const calculateDiscount = (original, current) => {
     if (!original || original <= current) return 0;
     return Math.round(((original - current) / original) * 100);
 };
 
-// NEW: Updated ProductCard to use the currency context
-// FIX: Add explicit type for props to prevent errors with the 'key' prop in lists.
 const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavorite }: { product: any, onSelect: any, onAddToCart: any, onToggleFavorite: any, isFavorite: any }) => {
-    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+    const { formatPrice } = useCurrency();
+    const { t } = useLanguage();
 
     return (
         <div className="product-card">
@@ -183,7 +328,6 @@ const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavor
                 <div className="product-details">
                     <h3>{product.name}</h3>
                     <p className="description truncate-text">{product.description}</p>
-                    {/* NEW: Use formatPrice for all price displays */}
                     <div className="product-price">
                         <span>{formatPrice(product.price)}</span>
                         {product.originalPrice && (
@@ -194,7 +338,7 @@ const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavor
                         )}
                     </div>
                 </div>
-                <button className="add-to-cart-btn" aria-label={`Add ${product.name} to cart`} onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}>
+                <button className="add-to-cart-btn" aria-label={t('add_to_cart')} onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}>
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 </button>
             </div>
@@ -204,22 +348,26 @@ const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavor
 
 // --- SECTIONS / PAGES --- //
 
-const HomePage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) => (
-    <>
-        <main className="hero container">
-            <p className="tagline">The Future of Fun and Transport</p>
-            <h1>Explore Frithjof's Inventions & Gadgets</h1>
-            <p>Discover a unique collection of electric vehicles, robots, RC toys, and futuristic gadgets. From the practical to the unbelievable, find your next adventure here.</p>
-            <button className="cta-button" onClick={() => onNavigate('allProducts')}>All Products</button>
-        </main>
-        <NewArrivals onNavigate={onNavigate} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} favorites={favorites} />
-        <ClientReviews />
-        <FAQ />
-    </>
-);
+const HomePage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) => {
+    const { t } = useLanguage();
+    return (
+        <>
+            <main className="hero container">
+                <p className="tagline">{t('hero_tagline')}</p>
+                <h1>{t('hero_title')}</h1>
+                <p>{t('hero_desc')}</p>
+                <button className="cta-button" onClick={() => onNavigate('allProducts')}>{t('hero_cta')}</button>
+            </main>
+            <NewArrivals onNavigate={onNavigate} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} favorites={favorites} />
+            <ClientReviews />
+            <FAQ />
+        </>
+    );
+};
 
 const NewArrivals = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) => {
     const carouselRef = useRef(null);
+    const { t } = useLanguage();
 
     const scroll = (direction) => {
         if (carouselRef.current) {
@@ -236,7 +384,7 @@ const NewArrivals = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) =
 
     return (
         <section id="new-arrivals" className="new-arrivals-section container">
-            <h2>New Arrivals</h2>
+            <h2>{t('new_arrivals_title')}</h2>
             <div className="product-carousel">
                 <div className="carousel-arrow left" role="button" onClick={() => scroll('left')}><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg></div>
                 <div className="product-grid" ref={carouselRef}>
@@ -258,11 +406,12 @@ const NewArrivals = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) =
 };
 
 const AllProducts = ({ products, onNavigate, onAddToCart, onToggleFavorite, favorites, activeCategory, setActiveCategory }) => {
+    const { t } = useLanguage();
     const categories = ['All', ...new Set(allProducts.map(p => p.category))];
 
     return (
         <div className="page-container container">
-            <h1 className="page-title">All Products</h1>
+            <h1 className="page-title">{t('nav_all_products')}</h1>
             <div className="category-filters">
                 {categories.map(cat => (
                     <button key={cat} className={`category-btn ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
@@ -280,7 +429,7 @@ const AllProducts = ({ products, onNavigate, onAddToCart, onToggleFavorite, favo
                     />
                 )) : (
                     <div className="empty-state">
-                        <p>No products found matching your criteria.</p>
+                        <p>{t('no_products')}</p>
                     </div>
                 )}
             </div>
@@ -289,6 +438,7 @@ const AllProducts = ({ products, onNavigate, onAddToCart, onToggleFavorite, favo
 };
 
 const FavoritesPage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) => {
+    const { t } = useLanguage();
     const favoritedProducts = useMemo(() => 
         allProducts.filter(p => favorites.includes(p.name)),
         [favorites]
@@ -296,11 +446,11 @@ const FavoritesPage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites })
 
     return (
         <div className="page-container container">
-            <h1 className="page-title">My Favorites</h1>
+            <h1 className="page-title">{t('fav_title')}</h1>
             {favoritedProducts.length === 0 ? (
                  <div className="empty-state">
-                    <p>You haven't favorited any items yet.</p>
-                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>Explore Products</button>
+                    <p>{t('fav_empty')}</p>
+                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>{t('explore_products')}</button>
                 </div>
             ) : (
                 <div className="all-products-grid">
@@ -320,15 +470,15 @@ const FavoritesPage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites })
     );
 };
 
-// NEW: Updated ProductDetail to use the currency context
 const ProductDetail = ({ product, onNavigate, onAddToCart }) => {
-    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+    const { formatPrice } = useCurrency();
+    const { t } = useLanguage();
 
     return (
         <div className="page-container container">
             <button className="back-button" onClick={() => onNavigate('allProducts')}>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                <span>Back to Products</span>
+                <span>{t('back_to_products')}</span>
             </button>
             <div className="product-detail-container">
                 <div className="product-gallery">
@@ -341,11 +491,10 @@ const ProductDetail = ({ product, onNavigate, onAddToCart }) => {
                 </div>
                 <div className="product-purchase-info">
                     <h2>{product.name}</h2>
-                    {/* NEW: Use formatPrice here */}
                     <p className="price">{formatPrice(product.price)}</p>
-                    <p className="description">{product.description}. This item is categorized under {product.category}. Lorem ipsum dolor sit amet et delectus accommodare his consul copiosae legendos at vix ad putent delectus delicata usu.</p>
+                    <p className="description">{product.description}. {t('product_desc_suffix')} {product.category}. Lorem ipsum dolor sit amet et delectus accommodare his consul copiosae legendos at vix ad putent delectus delicata usu.</p>
                     <div className="add-to-cart-form">
-                        <button className="cta-button" onClick={() => onAddToCart(product, 1)}>Add to Cart</button>
+                        <button className="cta-button" onClick={() => onAddToCart(product, 1)}>{t('add_to_cart')}</button>
                     </div>
                 </div>
             </div>
@@ -353,18 +502,18 @@ const ProductDetail = ({ product, onNavigate, onAddToCart }) => {
     );
 }
 
-// NEW: Updated Cart to use the currency context
 const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
-    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+    const { formatPrice } = useCurrency();
+    const { t } = useLanguage();
     const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
     return (
         <div className="page-container container">
-            <h1 className="page-title">My Cart</h1>
+            <h1 className="page-title">{t('cart_title')}</h1>
             {cart.length === 0 ? (
                 <div className="empty-state">
-                    <p>Your cart is empty.</p>
-                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>Continue Shopping</button>
+                    <p>{t('cart_empty')}</p>
+                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>{t('continue_shopping')}</button>
                 </div>
             ) : (
                 <div className="cart-container">
@@ -375,32 +524,30 @@ const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
                                 <div className="cart-item-details">
                                     <h3>{item.name}</h3>
                                     <p>{item.description}</p>
-                                    <button className="remove-item-btn" onClick={() => onRemoveFromCart(item.name)}>Remove</button>
+                                    <button className="remove-item-btn" onClick={() => onRemoveFromCart(item.name)}>{t('remove')}</button>
                                 </div>
                                 <select className="quantity-selector" value={item.quantity} onChange={(e) => onUpdateCart(item.name, parseInt(e.target.value))}>
                                     {[...Array(10).keys()].map(i => <option key={i+1} value={i+1}>{i+1}</option>)}
                                 </select>
-                                {/* NEW: Use formatPrice here */}
                                 <div className="cart-item-price">{formatPrice(item.price * item.quantity)}</div>
                             </div>
                         ))}
                     </div>
                     <div className="cart-summary">
-                        <h2>Order Summary</h2>
-                        {/* NEW: Use formatPrice for all summary items */}
+                        <h2>{t('order_summary')}</h2>
                         <div className="summary-row">
-                            <span>Subtotal</span>
+                            <span>{t('subtotal')}</span>
                             <span>{formatPrice(subtotal)}</span>
                         </div>
                          <div className="summary-row">
                             <span>Shipping</span>
-                            <span>Calculated at next step</span>
+                            <span>{t('shipping_calc')}</span>
                         </div>
                         <div className="summary-row total-price">
-                            <span>Total</span>
+                            <span>{t('total')}</span>
                             <span>{formatPrice(subtotal)}</span>
                         </div>
-                        <button className="cta-button" onClick={() => onNavigate('checkout')}>Check Out</button>
+                        <button className="cta-button" onClick={() => onNavigate('checkout')}>{t('checkout_btn')}</button>
                     </div>
                 </div>
             )}
@@ -408,9 +555,9 @@ const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
     );
 };
 
-// NEW: Updated Checkout to use the currency context and include Gmail option
 const Checkout = ({ cart, onNavigate }) => {
-    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+    const { formatPrice } = useCurrency();
+    const { t } = useLanguage();
     const [customerDetails, setCustomerDetails] = useState({ name: '', address: '' });
     const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
     const formRef = useRef(null);
@@ -438,31 +585,25 @@ const Checkout = ({ cart, onNavigate }) => {
 
     const handleStandardSubmit = (e) => {
         e.preventDefault();
-        
         if (formRef.current && !formRef.current.checkValidity()) {
             formRef.current.reportValidity();
             return;
         }
-
         const { subject, body } = generateEmailData();
         const recipientEmail = "frithjof@arngren.net";
         const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
         window.location.href = mailtoLink;
     };
 
     const handleGmailSubmit = (e) => {
         e.preventDefault();
-
         if (formRef.current && !formRef.current.checkValidity()) {
             formRef.current.reportValidity();
             return;
         }
-        
         const { subject, body } = generateEmailData();
         const recipientEmail = "frithjof@arngren.net";
         const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
         window.open(gmailLink, '_blank');
     };
 
@@ -470,8 +611,8 @@ const Checkout = ({ cart, onNavigate }) => {
         return (
             <div className="page-container container">
                  <div className="empty-state">
-                    <p>Your cart is empty. You cannot proceed to checkout.</p>
-                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>Continue Shopping</button>
+                    <p>{t('cart_empty')}</p>
+                    <button className="cta-button" onClick={() => onNavigate('allProducts')}>{t('continue_shopping')}</button>
                 </div>
             </div>
         );
@@ -479,29 +620,28 @@ const Checkout = ({ cart, onNavigate }) => {
 
     return (
         <div className="page-container container">
-            <h1 className="page-title">Checkout</h1>
+            <h1 className="page-title">{t('checkout_title')}</h1>
             <div className="checkout-container">
                 <form className="shipping-form" ref={formRef} onSubmit={handleStandardSubmit}>
-                    <h2>Shipping Information</h2>
+                    <h2>{t('shipping_info')}</h2>
                     <div className="form-group">
-                        <label htmlFor="name">Full Name</label>
+                        <label htmlFor="name">{t('full_name')}</label>
                         <input type="text" id="name" name="name" value={customerDetails.name} onChange={handleInputChange} required />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="address">Delivery Address</label>
+                        <label htmlFor="address">{t('delivery_address')}</label>
                         <textarea id="address" name="address" value={customerDetails.address} onChange={handleInputChange} required></textarea>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <button type="submit" className="cta-button">Confirm & Send Order via Email App</button>
+                        <button type="submit" className="cta-button">{t('confirm_email')}</button>
                         <button type="button" onClick={handleGmailSubmit} className="cta-button" style={{ backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                            Confirm & Send via Gmail
+                            {t('confirm_gmail')}
                         </button>
                     </div>
                 </form>
                 <div className="order-summary-checkout">
-                    <h2>Order Summary</h2>
-                    {/* NEW: Use formatPrice for all summary items */}
+                    <h2>{t('order_summary')}</h2>
                     {cart.map(item => (
                         <div key={item.name} className="summary-item">
                             <span className="summary-item-name">{item.name} (x{item.quantity})</span>
@@ -509,13 +649,13 @@ const Checkout = ({ cart, onNavigate }) => {
                         </div>
                     ))}
                     <div className="total-price">
-                        <span>Total</span>
+                        <span>{t('total')}</span>
                         <span>{formatPrice(subtotal)}</span>
                     </div>
                     <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                         <img 
                             src="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/00b5c288-ab6a-4db4-b639-e2f4c8d25ccc.png" 
-                            alt="Secure Checkout" 
+                            alt={t('secure_checkout_alt')}
                             style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
                         />
                     </div>
@@ -527,12 +667,12 @@ const Checkout = ({ cart, onNavigate }) => {
 
 const AuthModal = ({ isOpen, onClose, onNavigate }) => {
     const [isLoginView, setIsLoginView] = useState(true);
+    const { t } = useLanguage();
 
     const handleFormSubmit = (e) => {
         e.preventDefault();
-        // In a real app, you'd handle form submission here
         console.log("Form submitted");
-        onClose(); // Close modal on submission for now
+        onClose();
     };
     
     const handleNavigate = (view) => {
@@ -549,7 +689,7 @@ const AuthModal = ({ isOpen, onClose, onNavigate }) => {
                 {isLoginView ? (
                     // Login Form
                     <div className="auth-form-container">
-                        <h2 className="auth-title">Login</h2>
+                        <h2 className="auth-title">{t('login')}</h2>
                         <form className="auth-form" onSubmit={handleFormSubmit}>
                             <div className="form-group">
                                 <label htmlFor="login-email">Email</label>
@@ -559,7 +699,7 @@ const AuthModal = ({ isOpen, onClose, onNavigate }) => {
                                 <label htmlFor="login-password">Password</label>
                                 <input type="password" id="login-password" name="password" required placeholder="Enter your password" />
                             </div>
-                            <button type="submit" className="auth-submit-btn">Login</button>
+                            <button type="submit" className="auth-submit-btn">{t('login')}</button>
                         </form>
                         <p className="auth-switch-text">
                             Don't have an account? <span onClick={() => setIsLoginView(false)}>Sign up</span>
@@ -585,7 +725,7 @@ const AuthModal = ({ isOpen, onClose, onNavigate }) => {
                             <button type="submit" className="auth-submit-btn">Sign up</button>
                         </form>
                         <p className="auth-switch-text">
-                            Already have an account? <span onClick={() => setIsLoginView(true)}>Login</span>
+                            Already have an account? <span onClick={() => setIsLoginView(true)}>{t('login')}</span>
                         </p>
                         <p className="auth-terms-text">
                             By signing up, you agree to our <span onClick={() => handleNavigate('terms')}>Terms of Service</span> and <span onClick={() => handleNavigate('privacy')}>Privacy Policy</span>.
@@ -598,9 +738,19 @@ const AuthModal = ({ isOpen, onClose, onNavigate }) => {
 };
 
 // --- STATIC SECTIONS & PAGES --- //
-const ClientReviews = () => ( <section id="client-reviews" className="client-reviews-section container section"> <h2 className="section-title">Client Reviews</h2> <p className="section-subtitle">See what our adventurous customers have to say about our unique products.</p> <div className="reviews-grid"> { [{ quote: "The electric unicycle is a game-changer... It's like living in the future.", name: "A. Johansen", company: "Tech Innovators AS" }, { quote: "I bought a build-your-own robot kit for my daughter. Fantastic time putting it together.", name: "Maria Berg", company: "Future Coders Academy" }, { quote: "Their customer service is surprisingly good for such a quirky site... got a detailed, helpful response within hours.", name: "Lars Eriksen", company: "Hobbyist's Corner" }] .map((review, index) => ( <div key={index} className="review-card"> <p>"{review.quote}"</p> <div className="review-author"> <div className="author-avatar"></div> <div className="author-info"> <h4>{review.name}</h4> <span>{review.company}</span> </div> </div> </div> ))} </div> </section> );
+const ClientReviews = () => {
+    const { t } = useLanguage();
+    return (
+        <section id="client-reviews" className="client-reviews-section container section">
+            <h2 className="section-title">{t('client_reviews_title')}</h2>
+            <p className="section-subtitle">{t('client_reviews_subtitle')}</p>
+            <div className="reviews-grid"> { [{ quote: "The electric unicycle is a game-changer... It's like living in the future.", name: "A. Johansen", company: "Tech Innovators AS" }, { quote: "I bought a build-your-own robot kit for my daughter. Fantastic time putting it together.", name: "Maria Berg", company: "Future Coders Academy" }, { quote: "Their customer service is surprisingly good for such a quirky site... got a detailed, helpful response within hours.", name: "Lars Eriksen", company: "Hobbyist's Corner" }] .map((review, index) => ( <div key={index} className="review-card"> <p>"{review.quote}"</p> <div className="review-author"> <div className="author-avatar"></div> <div className="author-info"> <h4>{review.name}</h4> <span>{review.company}</span> </div> </div> </div> ))} </div>
+        </section>
+    );
+};
 const FAQ = () => { 
   const [openIndex, setOpenIndex] = useState(null); 
+  const { t } = useLanguage();
   const toggleFAQ = (index) => setOpenIndex(openIndex === index ? null : index); 
 
   const faqData = [ 
@@ -624,8 +774,8 @@ const FAQ = () => {
 
   return ( 
     <section id="faq" className="faq-section container section"> 
-      <h2 className="section-title">Frequently Asked Questions</h2> 
-      <p className="section-subtitle">Have questions? We've got answers.</p> 
+      <h2 className="section-title">{t('faq_title')}</h2> 
+      <p className="section-subtitle">{t('faq_subtitle')}</p> 
       <div className="faq-list"> 
         {faqData.map((faq, index) => ( 
           <div key={index} className="faq-item"> 
@@ -647,22 +797,35 @@ const FAQ = () => {
   ); 
 };
 
-const ShippingReturns = () => ( <div className="page-container container"><h2 className="page-title">Shipping & Returns</h2><div className="content-block"><h4>Shipping Policy</h4><p>We ship our unique gadgets and vehicles across Norway and to select international destinations. Shipping for standard items typically takes 3-5 business days within Norway. For larger items like electric cars or flying machines, a special delivery will be arranged, and we will contact you within 48 hours of your purchase to coordinate.</p><h4>Returns Policy</h4><p>You can return most items within 14 days of receipt for a full refund, provided they are in unused, original condition with all packaging intact. "Build Your Own" kits cannot be returned once the packaging has been opened. To initiate a return, please use the contact form to get in touch with our support team, and we will guide you through the process.</p></div></div> );
-const Warranty = () => ( <div className="page-container container"><h2 className="page-title">Warranty Information</h2><div className="content-block"><h4>Our Commitment</h4><p>All products sold on Arngren.net come with a standard 12-month warranty against manufacturing defects. This warranty is valid from the date of purchase and covers faults in materials and workmanship.</p><h4>Electric Vehicles</h4><p>Electric vehicles, including bikes, scooters, and cars, come with a specific 12-month warranty on the motor and battery system. This does not cover normal wear and tear, such as tire or brake pad replacement, or any damage caused by improper use or accidents.</p><h4>Claim Process</h4><p>If you believe your product has a fault covered by warranty, please contact us immediately with your order number and a description of the issue. We may request photos or videos to assess the problem. If a defect is confirmed, we will arrange for a repair, replacement, or refund at our discretion.</p></div></div> );
-const PrivacyPolicy = () => ( <div className="page-container container"><h2 className="page-title">Privacy Policy</h2><div className="content-block"><p>Your privacy is important to us. It is ARNGREN.net's policy to respect your privacy regarding any information we may collect from you across our website.</p><p>We only ask for personal information when we truly need it to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we’re collecting it and how it will be used.</p><p>We only retain collected information for as long as necessary to provide you with your requested service. What data we store, we’ll protect within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.</p><p>We don’t share any personally identifying information publicly or with third-parties, except when required to by law.</p></div></div> );
-const TermsOfService = () => ( <div className="page-container container"><h2 className="page-title">Terms of Service</h2><div className="content-block"><p>By accessing the website at ARNGREN.net, you are agreeing to be bound by these terms of service, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws.</p><h4>Use License</h4><p>Permission is granted to temporarily download one copy of the materials (information or software) on ARNGREN.net's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title.</p><h4>Disclaimer</h4><p>The materials on ARNGREN.net's website are provided on an 'as is' basis. ARNGREN.net makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.</p></div></div> );
+const ShippingReturns = () => {
+    const { t } = useLanguage();
+    return ( <div className="page-container container"><h2 className="page-title">{t('shipping_returns_title')}</h2><div className="content-block"><h4>Shipping Policy</h4><p>We ship our unique gadgets and vehicles across Norway and to select international destinations. Shipping for standard items typically takes 3-5 business days within Norway. For larger items like electric cars or flying machines, a special delivery will be arranged, and we will contact you within 48 hours of your purchase to coordinate.</p><h4>Returns Policy</h4><p>You can return most items within 14 days of receipt for a full refund, provided they are in unused, original condition with all packaging intact. "Build Your Own" kits cannot be returned once the packaging has been opened. To initiate a return, please use the contact form to get in touch with our support team, and we will guide you through the process.</p></div></div> );
+};
+const Warranty = () => {
+    const { t } = useLanguage();
+    return ( <div className="page-container container"><h2 className="page-title">{t('warranty_title')}</h2><div className="content-block"><h4>Our Commitment</h4><p>All products sold on Arngren.net come with a standard 12-month warranty against manufacturing defects. This warranty is valid from the date of purchase and covers faults in materials and workmanship.</p><h4>Electric Vehicles</h4><p>Electric vehicles, including bikes, scooters, and cars, come with a specific 12-month warranty on the motor and battery system. This does not cover normal wear and tear, such as tire or brake pad replacement, or any damage caused by improper use or accidents.</p><h4>Claim Process</h4><p>If you believe your product has a fault covered by warranty, please contact us immediately with your order number and a description of the issue. We may request photos or videos to assess the problem. If a defect is confirmed, we will arrange for a repair, replacement, or refund at our discretion.</p></div></div> );
+};
+const PrivacyPolicy = () => {
+    const { t } = useLanguage();
+    return ( <div className="page-container container"><h2 className="page-title">{t('privacy_title')}</h2><div className="content-block"><p>Your privacy is important to us. It is ARNGREN.net's policy to respect your privacy regarding any information we may collect from you across our website.</p><p>We only ask for personal information when we truly need it to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we’re collecting it and how it will be used.</p><p>We only retain collected information for as long as necessary to provide you with your requested service. What data we store, we’ll protect within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.</p><p>We don’t share any personally identifying information publicly or with third-parties, except when required to by law.</p></div></div> );
+};
+const TermsOfService = () => {
+    const { t } = useLanguage();
+    return ( <div className="page-container container"><h2 className="page-title">{t('terms_title')}</h2><div className="content-block"><p>By accessing the website at ARNGREN.net, you are agreeing to be bound by these terms of service, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws.</p><h4>Use License</h4><p>Permission is granted to temporarily download one copy of the materials (information or software) on ARNGREN.net's website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title.</p><h4>Disclaimer</h4><p>The materials on ARNGREN.net's website are provided on an 'as is' basis. ARNGREN.net makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.</p></div></div> );
+};
 
 const Footer = ({ onNavigate, navigateToHomeSection }) => {
+    const { t } = useLanguage();
     return (
         <footer className="site-footer">
             <div className="footer-content container">
                 <div className="footer-top">
                     <div className="footer-logo">ARNGREN.net</div>
                     <nav className="footer-nav">
-                        <a onClick={() => onNavigate('allProducts')}>All Products</a>
-                        <a onClick={() => onNavigate('shipping')}>Shipping & Returns</a>
-                        <a onClick={() => onNavigate('warranty')}>Warranty</a>
-                        <a onClick={() => navigateToHomeSection('#faq')}>FAQ</a>
+                        <a onClick={() => onNavigate('allProducts')}>{t('nav_all_products')}</a>
+                        <a onClick={() => onNavigate('shipping')}>{t('nav_shipping')}</a>
+                        <a onClick={() => onNavigate('warranty')}>{t('nav_warranty')}</a>
+                        <a onClick={() => navigateToHomeSection('#faq')}>{t('nav_faq')}</a>
                     </nav>
                     <div className="footer-social">
                         <a href="#" aria-label="Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
@@ -671,10 +834,10 @@ const Footer = ({ onNavigate, navigateToHomeSection }) => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>© {new Date().getFullYear()} ARNGREN.net. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} ARNGREN.net. {t('footer_rights')}</p>
                     <div className="footer-legal">
-                        <a onClick={() => onNavigate('privacy')}>Privacy Policy</a>
-                        <a onClick={() => onNavigate('terms')}>Terms of Service</a>
+                        <a onClick={() => onNavigate('privacy')}>{t('nav_privacy')}</a>
+                        <a onClick={() => onNavigate('terms')}>{t('nav_terms')}</a>
                     </div>
                 </div>
             </div>
@@ -710,6 +873,8 @@ const App = () => {
     const [activeCategory, setActiveCategory] = useState('All');
     const [notifications, setNotifications] = useState([]);
     
+    const { language, setLanguage, t } = useLanguage();
+
     // Theme State
     const [theme, setTheme] = useState(() => {
         try {
@@ -733,6 +898,10 @@ const App = () => {
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    };
+
+    const toggleLanguage = () => {
+        setLanguage(language === 'en' ? 'no' : 'en');
     };
 
     const removeNotification = (id) => {
@@ -816,21 +985,21 @@ const App = () => {
     const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
     const navItems = [
-        { name: "New Arrivals", href: "#new-arrivals", view: 'home' },
-        { name: "Client Reviews", href: "#client-reviews", view: 'home' },
-        { name: "FAQ", href: "#faq", view: 'home' },
-        { name: "Shipping & Returns", view: 'shipping' },
-        { name: "Warranty", view: 'warranty' },
+        { name: t('nav_new_arrivals'), href: "#new-arrivals", view: 'home' },
+        { name: t('nav_client_reviews'), href: "#client-reviews", view: 'home' },
+        { name: t('nav_faq'), href: "#faq", view: 'home' },
+        { name: t('nav_shipping'), view: 'shipping' },
+        { name: t('nav_warranty'), view: 'warranty' },
     ];
 
     const mobileNavItems = [
-        { name: "All Products", view: 'allProducts', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> },
-        { name: "My Favorites", view: 'favorites', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg> },
-        { name: "New Arrivals", href: "#new-arrivals", view: 'home', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg> },
-        { name: "Shipping & Returns", view: 'shipping', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1zM3 11h10"></path></svg> },
-        { name: "Warranty", view: 'warranty', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> },
-        { name: "Privacy Policy", view: 'privacy', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.789-2.75 9.565M12 11c0-3.517 1.009-6.789 2.75-9.565M12 11h.01M4.875 20.75c1.741-2.776 2.75-6.048 2.75-9.565S6.616 4.395 4.875 1.625m14.25 19.125c-1.741-2.776-2.75-6.048-2.75-9.565s1.009-6.789 2.75-9.565"></path></svg> },
-        { name: "Terms of Service", view: 'terms', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg> }
+        { name: t('nav_all_products'), view: 'allProducts', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg> },
+        { name: t('nav_favorites'), view: 'favorites', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg> },
+        { name: t('nav_new_arrivals'), href: "#new-arrivals", view: 'home', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg> },
+        { name: t('nav_shipping'), view: 'shipping', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 2h8a1 1 0 001-1zM3 11h10"></path></svg> },
+        { name: t('nav_warranty'), view: 'warranty', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> },
+        { name: t('nav_privacy'), view: 'privacy', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.789-2.75 9.565M12 11c0-3.517 1.009-6.789 2.75-9.565M12 11h.01M4.875 20.75c1.741-2.776 2.75-6.048 2.75-9.565S6.616 4.395 4.875 1.625m14.25 19.125c-1.741-2.776-2.75-6.048-2.75-9.565s1.009-6.789 2.75-9.565"></path></svg> },
+        { name: t('nav_terms'), view: 'terms', icon: <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg> }
     ];
 
     const handleNavLinkClick = (item) => {
@@ -848,8 +1017,7 @@ const App = () => {
     const totalCartItems = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
     return (
-        // NEW: Wrap the entire App's output in the CurrencyProvider
-        <CurrencyProvider>
+        <>
             <Notifications notifications={notifications} onRemove={removeNotification} />
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onNavigate={navigateTo} />
             <header className="header container">
@@ -861,7 +1029,7 @@ const App = () => {
                     <input 
                         type="text" 
                         className="search-input" 
-                        placeholder="Search for gadgets, robots..."
+                        placeholder={t('search_placeholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -874,18 +1042,23 @@ const App = () => {
                         className="action-item" 
                         onClick={toggleTheme} 
                         aria-label="Toggle theme"
-                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                        title={theme === 'dark' ? t('theme_light') : t('theme_dark')}
                     >
                         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
                     </button>
-                    <div id="google_translate_element" className="action-item"></div>
+                    <button className="action-item" onClick={toggleLanguage} title={t('switch_lang')}>
+                         <TranslateIcon />
+                         <span style={{display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 'bold', fontSize: '0.9rem'}}>
+                             {language === 'en' ? <><FlagUS /> EN</> : <><FlagNO /> NO</>}
+                         </span>
+                    </button>
                     <a className="action-item" onClick={() => navigateTo('favorites')}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                         {favorites.length > 0 && <span className="item-count">{favorites.length}</span>}
                     </a>
                     <a className="action-item" onClick={() => setIsAuthModalOpen(true)}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        <span>Login</span>
+                        <span>{t('login')}</span>
                     </a>
                     <a className="action-item" onClick={() => navigateTo('cart')}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
@@ -898,7 +1071,7 @@ const App = () => {
             <div className={`mobile-nav-menu ${isMobileMenuOpen ? 'open' : ''}`}>
                 <div className="mobile-nav-header">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    <h3>Hello, Guest</h3>
+                    <h3>Hello, {t('guest')}</h3>
                 </div>
                 <button className="close-btn" onClick={toggleMobileMenu}>&times;</button>
                 <ul>
@@ -909,9 +1082,17 @@ const App = () => {
                         </a></li>
                     ))}
                     <li>
+                        <a onClick={toggleLanguage}>
+                             <TranslateIcon />
+                             <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                {language === 'en' ? <><FlagUS /> English</> : <><FlagNO /> Norsk</>}
+                             </span>
+                        </a>
+                    </li>
+                    <li>
                         <a onClick={toggleTheme}>
                             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                            <span>{theme === 'dark' ? t('theme_light') : t('theme_dark')}</span>
                         </a>
                     </li>
                 </ul>
@@ -919,7 +1100,7 @@ const App = () => {
             
             <nav className="navigation">
                 <ul className="nav-links container">
-                    <li className="nav-link"><a onClick={() => handleNavLinkClick({ view: 'allProducts' })}>All Products</a></li>
+                    <li className="nav-link"><a onClick={() => handleNavLinkClick({ view: 'allProducts' })}>{t('nav_all_products')}</a></li>
                     {navItems.map(item => (<li key={item.name} className="nav-link"><a onClick={() => handleNavLinkClick(item)}>{item.name}</a></li>))}
                 </ul>
             </nav>
@@ -936,11 +1117,20 @@ const App = () => {
                 {view === 'terms' && <TermsOfService />}
             </main>
             <Footer onNavigate={navigateTo} navigateToHomeSection={navigateToHomeSection} />
-        </CurrencyProvider>
+        </>
     );
 };
 
+const AppWrapper = () => {
+    return (
+        <LanguageProvider>
+            <CurrencyProvider>
+                <App />
+            </CurrencyProvider>
+        </LanguageProvider>
+    );
+}
+
 const container = document.getElementById('root');
 const root = createRoot(container);
-// NEW: The main App component is now rendered directly without the extra semicolon and exclamation mark.
-root.render(<App />);
+root.render(<AppWrapper />);
