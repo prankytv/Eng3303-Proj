@@ -1,5 +1,71 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useContext, createContext } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// --- NEW: CURRENCY CONTEXT --- //
+// Define a fixed exchange rate. In a real application, you might fetch this from an API.
+const NOK_TO_USD_RATE = 0.099; // 1 NOK = $0.099 USD
+
+// Create a context to hold currency information
+// FIX: Provide a default value to `createContext` to avoid type errors. The default value ensures that the context has a proper shape, preventing cascading type errors in consuming components.
+const CurrencyContext = createContext({
+    currency: 'NOK',
+    formatPrice: (priceInNok) => `NOK ${priceInNok.toLocaleString('en-US')}`,
+});
+
+// Create a custom hook for easy access to the context
+export const useCurrency = () => useContext(CurrencyContext);
+
+// Create a provider component to wrap the app
+// FIX: Add explicit type for children prop to satisfy TypeScript.
+const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
+    const [currency, setCurrency] = useState('NOK'); // Default to NOK
+
+    useEffect(() => {
+        // This function checks the language and sets the currency
+        const checkLanguage = () => {
+            const lang = document.documentElement.lang;
+            if (lang && lang.startsWith('en')) {
+                setCurrency('USD');
+            } else {
+                setCurrency('NOK');
+            }
+        };
+
+        // Run it once on initial load
+        checkLanguage();
+
+        // The Google Translate widget changes the `lang` attribute on the <html> tag.
+        // We can use a MutationObserver to "listen" for that change.
+        const observer = new MutationObserver(checkLanguage);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
+        // Cleanup the observer when the component unmounts
+        return () => observer.disconnect();
+    }, []);
+
+    // Function to format the price based on the current currency
+    const formatPrice = (priceInNok) => {
+        if (currency === 'USD') {
+            const priceInUsd = priceInNok * NOK_TO_USD_RATE;
+            // Format for US Dollars
+            return priceInUsd.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+        }
+        // Format for Norwegian Kroner
+        return `NOK ${priceInNok.toLocaleString('en-US')}`;
+    };
+
+    const value = { currency, formatPrice };
+
+    return (
+        <CurrencyContext.Provider value={value}>
+            {children}
+        </CurrencyContext.Provider>
+    );
+};
+
 
 const allProducts = [
     // Gadgets
@@ -75,6 +141,18 @@ const allProducts = [
     }
 ];
 
+// Icons for Theme Toggle
+const SunIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+  </svg>
+);
 
 
 const calculateDiscount = (original, current) => {
@@ -82,40 +160,47 @@ const calculateDiscount = (original, current) => {
     return Math.round(((original - current) / original) * 100);
 };
 
-const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavorite }) => (
-    <div className="product-card">
-        <div onClick={() => onSelect(product)}>
-            <div className="product-image">
-                <img src={product.image} alt={product.name} />
-            </div>
-        </div>
-        <button 
-            className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
-            aria-label={`Favorite ${product.name}`}
-            onClick={(e) => { e.stopPropagation(); onToggleFavorite(product.name); }}
-        >
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
-        </button>
-        <div className="product-info" onClick={() => onSelect(product)}>
-            <div className="product-details">
-                <h3>{product.name}</h3>
-                <p className="description truncate-text">{product.description}</p>
-                <div className="product-price">
-                    <span>NOK {product.price.toLocaleString('en-US')}</span>
-                    {product.originalPrice && (
-                        <>
-                            <span className="original-price"><s>NOK {product.originalPrice.toLocaleString('en-US')}</s></span>
-                            <span className="discount">-{calculateDiscount(product.originalPrice, product.price)}%</span>
-                        </>
-                    )}
+// NEW: Updated ProductCard to use the currency context
+// FIX: Add explicit type for props to prevent errors with the 'key' prop in lists.
+const ProductCard = ({ product, onSelect, onAddToCart, onToggleFavorite, isFavorite }: { product: any, onSelect: any, onAddToCart: any, onToggleFavorite: any, isFavorite: any }) => {
+    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+
+    return (
+        <div className="product-card">
+            <div onClick={() => onSelect(product)}>
+                <div className="product-image">
+                    <img src={product.image} alt={product.name} />
                 </div>
             </div>
-            <button className="add-to-cart-btn" aria-label={`Add ${product.name} to cart`} onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <button
+                className={`favorite-btn ${isFavorite ? 'favorited' : ''}`}
+                aria-label={`Favorite ${product.name}`}
+                onClick={(e) => { e.stopPropagation(); onToggleFavorite(product.name); }}
+            >
+                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
             </button>
+            <div className="product-info" onClick={() => onSelect(product)}>
+                <div className="product-details">
+                    <h3>{product.name}</h3>
+                    <p className="description truncate-text">{product.description}</p>
+                    {/* NEW: Use formatPrice for all price displays */}
+                    <div className="product-price">
+                        <span>{formatPrice(product.price)}</span>
+                        {product.originalPrice && (
+                            <>
+                                <span className="original-price"><s>{formatPrice(product.originalPrice)}</s></span>
+                                <span className="discount">-{calculateDiscount(product.originalPrice, product.price)}%</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <button className="add-to-cart-btn" aria-label={`Add ${product.name} to cart`} onClick={(e) => { e.stopPropagation(); onAddToCart(product, 1); }}>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // --- SECTIONS / PAGES --- //
 
@@ -126,7 +211,6 @@ const HomePage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites }) => (
             <h1>Explore Frithjof's Inventions & Gadgets</h1>
             <p>Discover a unique collection of electric vehicles, robots, RC toys, and futuristic gadgets. From the practical to the unbelievable, find your next adventure here.</p>
             <button className="cta-button" onClick={() => onNavigate('allProducts')}>All Products</button>
-            <div className="carousel-dots"><div className="dot active"></div><div className="dot"></div><div className="dot"></div></div>
         </main>
         <NewArrivals onNavigate={onNavigate} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} favorites={favorites} />
         <ClientReviews />
@@ -236,34 +320,42 @@ const FavoritesPage = ({ onNavigate, onAddToCart, onToggleFavorite, favorites })
     );
 };
 
-const ProductDetail = ({ product, onNavigate, onAddToCart }) => (
-    <div className="page-container container">
-        <button className="back-button" onClick={() => onNavigate('allProducts')}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            <span>Back to Products</span>
-        </button>
-        <div className="product-detail-container">
-            <div className="product-gallery">
-                <div className="main-image">
-                    <img src={product.image} alt={product.name} />
+// NEW: Updated ProductDetail to use the currency context
+const ProductDetail = ({ product, onNavigate, onAddToCart }) => {
+    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
+
+    return (
+        <div className="page-container container">
+            <button className="back-button" onClick={() => onNavigate('allProducts')}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span>Back to Products</span>
+            </button>
+            <div className="product-detail-container">
+                <div className="product-gallery">
+                    <div className="main-image">
+                        <img src={product.image} alt={product.name} />
+                    </div>
+                    <div className="thumbnail-images">
+                        <div className="thumb active"><img src={product.image} alt={`${product.name} thumbnail`} /></div>
+                    </div>
                 </div>
-                <div className="thumbnail-images">
-                    <div className="thumb active"><img src={product.image} alt={`${product.name} thumbnail`} /></div>
-                </div>
-            </div>
-            <div className="product-purchase-info">
-                <h2>{product.name}</h2>
-                <p className="price">NOK {product.price.toLocaleString('en-US')}</p>
-                <p className="description">{product.description}. This item is categorized under {product.category}. Lorem ipsum dolor sit amet et delectus accommodare his consul copiosae legendos at vix ad putent delectus delicata usu.</p>
-                <div className="add-to-cart-form">
-                    <button className="cta-button" onClick={() => onAddToCart(product, 1)}>Add to Cart</button>
+                <div className="product-purchase-info">
+                    <h2>{product.name}</h2>
+                    {/* NEW: Use formatPrice here */}
+                    <p className="price">{formatPrice(product.price)}</p>
+                    <p className="description">{product.description}. This item is categorized under {product.category}. Lorem ipsum dolor sit amet et delectus accommodare his consul copiosae legendos at vix ad putent delectus delicata usu.</p>
+                    <div className="add-to-cart-form">
+                        <button className="cta-button" onClick={() => onAddToCart(product, 1)}>Add to Cart</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+}
 
+// NEW: Updated Cart to use the currency context
 const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
+    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
     const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
     return (
@@ -288,15 +380,17 @@ const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
                                 <select className="quantity-selector" value={item.quantity} onChange={(e) => onUpdateCart(item.name, parseInt(e.target.value))}>
                                     {[...Array(10).keys()].map(i => <option key={i+1} value={i+1}>{i+1}</option>)}
                                 </select>
-                                <div className="cart-item-price">NOK {(item.price * item.quantity).toLocaleString('en-US')}</div>
+                                {/* NEW: Use formatPrice here */}
+                                <div className="cart-item-price">{formatPrice(item.price * item.quantity)}</div>
                             </div>
                         ))}
                     </div>
                     <div className="cart-summary">
                         <h2>Order Summary</h2>
+                        {/* NEW: Use formatPrice for all summary items */}
                         <div className="summary-row">
                             <span>Subtotal</span>
-                            <span>NOK {subtotal.toLocaleString('en-US')}</span>
+                            <span>{formatPrice(subtotal)}</span>
                         </div>
                          <div className="summary-row">
                             <span>Shipping</span>
@@ -304,7 +398,7 @@ const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
                         </div>
                         <div className="summary-row total-price">
                             <span>Total</span>
-                            <span>NOK {subtotal.toLocaleString('en-US')}</span>
+                            <span>{formatPrice(subtotal)}</span>
                         </div>
                         <button className="cta-button" onClick={() => onNavigate('checkout')}>Check Out</button>
                     </div>
@@ -314,18 +408,19 @@ const Cart = ({ cart, onNavigate, onUpdateCart, onRemoveFromCart }) => {
     );
 };
 
+// NEW: Updated Checkout to use the currency context and include Gmail option
 const Checkout = ({ cart, onNavigate }) => {
+    const { formatPrice } = useCurrency(); // NEW: Get the formatPrice function
     const [customerDetails, setCustomerDetails] = useState({ name: '', address: '' });
     const subtotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+    const formRef = useRef(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setCustomerDetails(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmitOrder = (e) => {
-        e.preventDefault();
-        
+    const generateEmailData = () => {
         const subject = "New Order from ARNGREN.net";
         const body = [
             'New Order Details:',
@@ -334,19 +429,41 @@ const Checkout = ({ cart, onNavigate }) => {
             `Delivery Address: ${customerDetails.address}`,
             '--------------------',
             'Order Summary:',
-            ...cart.map(item => `- ${item.name} (x${item.quantity}) - NOK ${item.price.toLocaleString('en-US')}`),
+            ...cart.map(item => `- ${item.name} (x${item.quantity}) - ${formatPrice(item.price)}`),
             '--------------------',
-            `Total: NOK ${subtotal.toLocaleString('en-US')}`
+            `Total: ${formatPrice(subtotal)}`
         ].join('\r\n');
+        return { subject, body };
+    };
+
+    const handleStandardSubmit = (e) => {
+        e.preventDefault();
         
+        if (formRef.current && !formRef.current.checkValidity()) {
+            formRef.current.reportValidity();
+            return;
+        }
+
+        const { subject, body } = generateEmailData();
         const recipientEmail = "frithjof@arngren.net";
         const mailtoLink = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         
-        const link = document.createElement('a');
-        link.href = mailtoLink;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        window.location.href = mailtoLink;
+    };
+
+    const handleGmailSubmit = (e) => {
+        e.preventDefault();
+
+        if (formRef.current && !formRef.current.checkValidity()) {
+            formRef.current.reportValidity();
+            return;
+        }
+        
+        const { subject, body } = generateEmailData();
+        const recipientEmail = "frithjof@arngren.net";
+        const gmailLink = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipientEmail}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        window.open(gmailLink, '_blank');
     };
 
     if (cart.length === 0) {
@@ -364,7 +481,7 @@ const Checkout = ({ cart, onNavigate }) => {
         <div className="page-container container">
             <h1 className="page-title">Checkout</h1>
             <div className="checkout-container">
-                <form className="shipping-form" onSubmit={handleSubmitOrder}>
+                <form className="shipping-form" ref={formRef} onSubmit={handleStandardSubmit}>
                     <h2>Shipping Information</h2>
                     <div className="form-group">
                         <label htmlFor="name">Full Name</label>
@@ -374,19 +491,33 @@ const Checkout = ({ cart, onNavigate }) => {
                         <label htmlFor="address">Delivery Address</label>
                         <textarea id="address" name="address" value={customerDetails.address} onChange={handleInputChange} required></textarea>
                     </div>
-                    <button type="submit" className="cta-button">Confirm & Send Order via Email</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <button type="submit" className="cta-button">Confirm & Send Order via Email App</button>
+                        <button type="button" onClick={handleGmailSubmit} className="cta-button" style={{ backgroundColor: '#ea4335', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                            Confirm & Send via Gmail
+                        </button>
+                    </div>
                 </form>
                 <div className="order-summary-checkout">
                     <h2>Order Summary</h2>
+                    {/* NEW: Use formatPrice for all summary items */}
                     {cart.map(item => (
                         <div key={item.name} className="summary-item">
                             <span className="summary-item-name">{item.name} (x{item.quantity})</span>
-                            <span>NOK {(item.price * item.quantity).toLocaleString('en-US')}</span>
+                            <span>{formatPrice(item.price * item.quantity)}</span>
                         </div>
                     ))}
                     <div className="total-price">
                         <span>Total</span>
-                        <span>NOK {subtotal.toLocaleString('en-US')}</span>
+                        <span>{formatPrice(subtotal)}</span>
+                    </div>
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                        <img 
+                            src="https://user-gen-media-assets.s3.amazonaws.com/gemini_images/00b5c288-ab6a-4db4-b639-e2f4c8d25ccc.png" 
+                            alt="Secure Checkout" 
+                            style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                        />
                     </div>
                 </div>
             </div>
@@ -394,10 +525,128 @@ const Checkout = ({ cart, onNavigate }) => {
     );
 };
 
+const AuthModal = ({ isOpen, onClose, onNavigate }) => {
+    const [isLoginView, setIsLoginView] = useState(true);
+
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        // In a real app, you'd handle form submission here
+        console.log("Form submitted");
+        onClose(); // Close modal on submission for now
+    };
+    
+    const handleNavigate = (view) => {
+        onClose();
+        onNavigate(view);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className={`auth-modal-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}>
+            <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+                <button className="close-modal-btn" onClick={onClose}>&times;</button>
+                {isLoginView ? (
+                    // Login Form
+                    <div className="auth-form-container">
+                        <h2 className="auth-title">Login</h2>
+                        <form className="auth-form" onSubmit={handleFormSubmit}>
+                            <div className="form-group">
+                                <label htmlFor="login-email">Email</label>
+                                <input type="email" id="login-email" name="email" required placeholder="Enter your email" />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="login-password">Password</label>
+                                <input type="password" id="login-password" name="password" required placeholder="Enter your password" />
+                            </div>
+                            <button type="submit" className="auth-submit-btn">Login</button>
+                        </form>
+                        <p className="auth-switch-text">
+                            Don't have an account? <span onClick={() => setIsLoginView(false)}>Sign up</span>
+                        </p>
+                    </div>
+                ) : (
+                    // Sign Up Form
+                    <div className="auth-form-container">
+                        <h2 className="auth-title">Sign up form</h2>
+                        <form className="auth-form" onSubmit={handleFormSubmit}>
+                             <div className="form-group">
+                                <label htmlFor="signup-username">Username</label>
+                                <input type="text" id="signup-username" name="username" required placeholder="Choose a username" />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="signup-email">Email</label>
+                                <input type="email" id="signup-email" name="email" required placeholder="Enter your email" />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="signup-password">Password</label>
+                                <input type="password" id="signup-password" name="password" required placeholder="Create a password" />
+                            </div>
+                            <button type="submit" className="auth-submit-btn">Sign up</button>
+                        </form>
+                        <p className="auth-switch-text">
+                            Already have an account? <span onClick={() => setIsLoginView(true)}>Login</span>
+                        </p>
+                        <p className="auth-terms-text">
+                            By signing up, you agree to our <span onClick={() => handleNavigate('terms')}>Terms of Service</span> and <span onClick={() => handleNavigate('privacy')}>Privacy Policy</span>.
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 // --- STATIC SECTIONS & PAGES --- //
 const ClientReviews = () => ( <section id="client-reviews" className="client-reviews-section container section"> <h2 className="section-title">Client Reviews</h2> <p className="section-subtitle">See what our adventurous customers have to say about our unique products.</p> <div className="reviews-grid"> { [{ quote: "The electric unicycle is a game-changer... It's like living in the future.", name: "A. Johansen", company: "Tech Innovators AS" }, { quote: "I bought a build-your-own robot kit for my daughter. Fantastic time putting it together.", name: "Maria Berg", company: "Future Coders Academy" }, { quote: "Their customer service is surprisingly good for such a quirky site... got a detailed, helpful response within hours.", name: "Lars Eriksen", company: "Hobbyist's Corner" }] .map((review, index) => ( <div key={index} className="review-card"> <p>"{review.quote}"</p> <div className="review-author"> <div className="author-avatar"></div> <div className="author-info"> <h4>{review.name}</h4> <span>{review.company}</span> </div> </div> </div> ))} </div> </section> );
-const FAQ = () => { const [openIndex, setOpenIndex] = useState(null); const toggleFAQ = (index) => setOpenIndex(openIndex === index ? null : index); const faqData = [ { question: "Do you ship internationally?", answer: "Yes, we ship to most countries worldwide. Shipping costs and times vary depending on the destination and the size of the product." }, { question: "What is the warranty on your electric vehicles?", answer: "Our electric vehicles come with a one-year manufacturer's warranty covering the motor and battery." }, { question: "Can I get a license plate for the electric cars?", answer: "Some of our electric vehicles are street-legal and can be registered. The product description will always specify." }, { question: "Are the 'Build Your Own' kits suitable for beginners?", answer: "It depends on the kit. Each product page has a difficulty rating and a list of required skills." } ]; return ( <section id="faq" className="faq-section container section"> <h2 className="section-title">Frequently Asked Questions</h2> <p className="section-subtitle">Have questions? We've got answers.</p> <div className="faq-list"> {faqData.map((faq, index) => ( <div key={index} className="faq-item"> <div className="faq-question" onClick={() => toggleFAQ(index)} role="button" aria-expanded={openIndex === index}> <span>{faq.question}</span> <svg className={`faq-icon ${openIndex === index ? 'open' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg> </div> {openIndex === index && ( <div className="faq-answer"> <p>{faq.answer}</p> </div> )} </div> ))} </div> </section> ); };
+const FAQ = () => { 
+  const [openIndex, setOpenIndex] = useState(null); 
+  const toggleFAQ = (index) => setOpenIndex(openIndex === index ? null : index); 
+
+  const faqData = [ 
+    { 
+      question: "Do you ship internationally?", 
+      answer: "Yes, we ship to most countries worldwide. Shipping costs and times vary depending on the destination and the size of the product." 
+    }, 
+    { 
+      question: "What is the warranty on your electric vehicles?", 
+      answer: "Our electric vehicles come with a one-year manufacturer's warranty covering the motor and battery." 
+    }, 
+    { 
+      question: "How do I place an order?", 
+      answer: "Orders can be placed by selecting the products you want and sending your order details via email, fax, or letter. Payment is made through Vipps or bank transfer. After submitting your order, you will receive a summary with payment instructions. There is no immediate online checkout or automated confirmation." 
+    }, 
+    { 
+      question: "Are the 'Build Your Own' kits suitable for beginners?", 
+      answer: "It depends on the kit. Each product page has a difficulty rating and a list of required skills." 
+    } 
+  ]; 
+
+  return ( 
+    <section id="faq" className="faq-section container section"> 
+      <h2 className="section-title">Frequently Asked Questions</h2> 
+      <p className="section-subtitle">Have questions? We've got answers.</p> 
+      <div className="faq-list"> 
+        {faqData.map((faq, index) => ( 
+          <div key={index} className="faq-item"> 
+            <div className="faq-question" onClick={() => toggleFAQ(index)} role="button" aria-expanded={openIndex === index}> 
+              <span>{faq.question}</span> 
+              <svg className={`faq-icon ${openIndex === index ? 'open' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg> 
+            </div> 
+            {openIndex === index && ( 
+              <div className="faq-answer"> 
+                <p>{faq.answer}</p> 
+              </div> 
+            )} 
+          </div> 
+        ))} 
+      </div> 
+    </section> 
+  ); 
+};
+
 const ShippingReturns = () => ( <div className="page-container container"><h2 className="page-title">Shipping & Returns</h2><div className="content-block"><h4>Shipping Policy</h4><p>We ship our unique gadgets and vehicles across Norway and to select international destinations. Shipping for standard items typically takes 3-5 business days within Norway. For larger items like electric cars or flying machines, a special delivery will be arranged, and we will contact you within 48 hours of your purchase to coordinate.</p><h4>Returns Policy</h4><p>You can return most items within 14 days of receipt for a full refund, provided they are in unused, original condition with all packaging intact. "Build Your Own" kits cannot be returned once the packaging has been opened. To initiate a return, please use the contact form to get in touch with our support team, and we will guide you through the process.</p></div></div> );
 const Warranty = () => ( <div className="page-container container"><h2 className="page-title">Warranty Information</h2><div className="content-block"><h4>Our Commitment</h4><p>All products sold on Arngren.net come with a standard 12-month warranty against manufacturing defects. This warranty is valid from the date of purchase and covers faults in materials and workmanship.</p><h4>Electric Vehicles</h4><p>Electric vehicles, including bikes, scooters, and cars, come with a specific 12-month warranty on the motor and battery system. This does not cover normal wear and tear, such as tire or brake pad replacement, or any damage caused by improper use or accidents.</p><h4>Claim Process</h4><p>If you believe your product has a fault covered by warranty, please contact us immediately with your order number and a description of the issue. We may request photos or videos to assess the problem. If a defect is confirmed, we will arrange for a repair, replacement, or refund at our discretion.</p></div></div> );
 const PrivacyPolicy = () => ( <div className="page-container container"><h2 className="page-title">Privacy Policy</h2><div className="content-block"><p>Your privacy is important to us. It is ARNGREN.net's policy to respect your privacy regarding any information we may collect from you across our website.</p><p>We only ask for personal information when we truly need it to provide a service to you. We collect it by fair and lawful means, with your knowledge and consent. We also let you know why we’re collecting it and how it will be used.</p><p>We only retain collected information for as long as necessary to provide you with your requested service. What data we store, we’ll protect within commercially acceptable means to prevent loss and theft, as well as unauthorized access, disclosure, copying, use or modification.</p><p>We don’t share any personally identifying information publicly or with third-parties, except when required to by law.</p></div></div> );
@@ -455,10 +704,36 @@ const App = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [cart, setCart] = useState([]);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [favorites, setFavorites] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
     const [notifications, setNotifications] = useState([]);
+    
+    // Theme State
+    const [theme, setTheme] = useState(() => {
+        try {
+            return localStorage.getItem('theme') || 'dark';
+        } catch (e) {
+            return 'dark';
+        }
+    });
+
+    // Effect to update body class when theme changes
+    useEffect(() => {
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+        } else {
+            document.body.classList.remove('light-mode');
+        }
+        try {
+            localStorage.setItem('theme', theme);
+        } catch(e) {}
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    };
 
     const removeNotification = (id) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isExiting: true } : n));
@@ -573,8 +848,10 @@ const App = () => {
     const totalCartItems = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
     return (
-        <>
+        // NEW: Wrap the entire App's output in the CurrencyProvider
+        <CurrencyProvider>
             <Notifications notifications={notifications} onRemove={removeNotification} />
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onNavigate={navigateTo} />
             <header className="header container">
                  <button className="hamburger-menu" onClick={toggleMobileMenu} aria-label="Open navigation menu">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-4 6h4"></path></svg>
@@ -593,13 +870,23 @@ const App = () => {
                     </button>
                 </form>
                 <div className="user-actions">
-                   
+                    <button 
+                        className="action-item" 
+                        onClick={toggleTheme} 
+                        aria-label="Toggle theme"
+                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    >
+                        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                    </button>
                     <div id="google_translate_element" className="action-item"></div>
                     <a className="action-item" onClick={() => navigateTo('favorites')}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                         {favorites.length > 0 && <span className="item-count">{favorites.length}</span>}
                     </a>
-                    <a className="action-item"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><span>Login</span></a>
+                    <a className="action-item" onClick={() => setIsAuthModalOpen(true)}>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        <span>Login</span>
+                    </a>
                     <a className="action-item" onClick={() => navigateTo('cart')}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         {totalCartItems > 0 && <span className="item-count">{totalCartItems}</span>}
@@ -621,6 +908,12 @@ const App = () => {
                             <span>{item.name}</span>
                         </a></li>
                     ))}
+                    <li>
+                        <a onClick={toggleTheme}>
+                            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
             
@@ -643,10 +936,11 @@ const App = () => {
                 {view === 'terms' && <TermsOfService />}
             </main>
             <Footer onNavigate={navigateTo} navigateToHomeSection={navigateToHomeSection} />
-        </>
+        </CurrencyProvider>
     );
 };
 
 const container = document.getElementById('root');
-const root = createRoot(container!);
+const root = createRoot(container);
+// NEW: The main App component is now rendered directly without the extra semicolon and exclamation mark.
 root.render(<App />);
