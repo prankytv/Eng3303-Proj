@@ -16,6 +16,48 @@
             --error-color: #f44336;
         }
 
+        /* Light Mode Styles */
+        body.light-mode {
+            --background-color: #f5f7fa;
+            --surface-color: #ffffff;
+            --primary-text-color: #2d3436;
+            --secondary-text-color: #636e72;
+            --accent-color: #0984e3;
+            --border-color: #dfe6e9;
+        }
+
+        body.light-mode .product-image,
+        body.light-mode .cart-item-image,
+        body.light-mode .main-image,
+        body.light-mode .thumb {
+            background-color: #dfe6e9;
+        }
+
+        body.light-mode .mobile-nav-header {
+            background-color: #dfe6e9;
+        }
+
+        body.light-mode .favorite-btn {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        body.light-mode .carousel-arrow {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--primary-text-color);
+            border-color: var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.light-mode .carousel-arrow:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
+        body.light-mode .search-input {
+            background-color: #ffffff;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -31,6 +73,7 @@
             background-color: var(--background-color);
             color: var(--primary-text-color);
             line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -76,6 +119,7 @@
             background-color: var(--surface-color);
             color: var(--primary-text-color);
             font-size: 1rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         .search-input::placeholder {
             color: var(--secondary-text-color);
@@ -112,6 +156,11 @@
             text-decoration: none;
             cursor: pointer;
             position: relative;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 0;
         }
         .action-item:hover {
             color: var(--accent-color);
@@ -189,6 +238,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            transition: background-color 0.3s ease;
         }
         .mobile-nav-header svg {
             width: 30px;
@@ -436,7 +486,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
             scroll-snap-align: start;
             cursor: pointer;
             position: relative;
@@ -445,7 +495,7 @@
         }
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
         .favorite-btn {
@@ -487,6 +537,7 @@
             justify-content: center;
             aspect-ratio: 1 / 1;
             flex-shrink: 0;
+            transition: background-color 0.3s;
         }
         
         .product-image img,
@@ -587,6 +638,7 @@
             color: var(--primary-text-color);
             cursor: pointer;
             z-index: 10;
+            transition: background-color 0.3s, color 0.3s;
         }
         .carousel-arrow:hover {
             background-color: var(--surface-color);
@@ -611,6 +663,7 @@
             padding: 2rem;
             border-radius: 12px;
             border: 1px solid var(--border-color);
+            transition: background-color 0.3s;
         }
         .review-card p {
             margin-bottom: 1.5rem;
@@ -648,6 +701,7 @@
             border-radius: 8px;
             margin-bottom: 1rem;
             overflow: hidden;
+            transition: background-color 0.3s;
         }
         .faq-question {
             display: flex;
@@ -720,6 +774,7 @@
             justify-content: center;
             margin-bottom: 1rem;
             overflow: hidden;
+            transition: background-color 0.3s;
         }
         .thumbnail-images {
             display: grid;
@@ -736,6 +791,7 @@
             cursor: pointer;
             border: 2px solid transparent;
             overflow: hidden;
+            transition: background-color 0.3s;
         }
         .thumbnail-images .thumb.active {
             border-color: var(--accent-color);
@@ -789,6 +845,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            transition: background-color 0.3s;
         }
         .cart-item-details h3 {
             font-size: 1.2rem;
@@ -825,6 +882,7 @@
             border-radius: 12px;
             position: sticky;
             top: 2rem;
+            transition: background-color 0.3s;
         }
         .cart-summary h2 {
             font-size: 1.5rem;
@@ -858,6 +916,7 @@
             background-color: var(--surface-color);
             padding: 2rem;
             border-radius: 12px;
+            transition: background-color 0.3s;
         }
         .shipping-form h2 {
             font-size: 1.5rem;
@@ -879,6 +938,7 @@
             border-radius: 8px;
             color: var(--primary-text-color);
             font-size: 1rem;
+            transition: background-color 0.3s;
         }
         .form-group textarea {
             min-height: 120px;
@@ -894,6 +954,7 @@
             border-radius: 12px;
             position: sticky;
             top: 2rem;
+            transition: background-color 0.3s;
         }
         .order-summary-checkout h2 {
             font-size: 1.5rem;
@@ -918,6 +979,101 @@
             display: flex;
             justify-content: space-between;
         }
+        
+        /* Auth Modal */
+        .auth-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+        .auth-modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .auth-modal {
+            background-color: var(--surface-color);
+            padding: 2.5rem 3rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .auth-modal-overlay.open .auth-modal {
+            transform: scale(1);
+        }
+        .close-modal-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--secondary-text-color);
+            font-size: 2rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .close-modal-btn:hover {
+            color: var(--primary-text-color);
+        }
+        .auth-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+        .auth-form .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .auth-form .form-group input {
+             padding: 0.85rem;
+        }
+        .auth-submit-btn {
+            width: 100%;
+            padding: 0.85rem;
+            font-size: 1rem;
+            margin-top: 1rem;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .auth-submit-btn:hover {
+            opacity: 0.9;
+        }
+        .auth-switch-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--secondary-text-color);
+        }
+        .auth-switch-text span {
+            color: var(--accent-color);
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .auth-terms-text {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--secondary-text-color);
+            margin-top: 2rem;
+        }
+        .auth-terms-text span {
+            text-decoration: underline;
+            cursor: pointer;
+        }
 
         /* Footer */
         .site-footer {
@@ -926,6 +1082,7 @@
             padding: 3rem 0;
             margin-top: 4rem;
             color: var(--secondary-text-color);
+            transition: background-color 0.3s;
         }
         .footer-content {
             display: flex;
@@ -1130,8 +1287,9 @@
                 display: none;
             }
             .product-grid {
-                grid-auto-columns: 80%;
-                gap: 1.5rem;
+                /* Show one full card at a time on mobile */
+                grid-auto-columns: 100%;
+                gap: 1rem;
             }
             .carousel-arrow {
                 display: none;
@@ -1181,18 +1339,20 @@
             .cart-item-details { grid-column: 2; grid-row: 1; }
             .quantity-selector { grid-column: 2; grid-row: 2; justify-self: start; }
             .cart-item-price { grid-column: 2; grid-row: 3; justify-self: end; }
+            
+            .auth-modal {
+                padding: 2rem 1.5rem;
+                max-width: 90vw;
+            }
         }
-        #google_translate_element select.goog-te-combo {
-    color: white !important;
-}
-
     </style>
 <script type="importmap">
 {
   "imports": {
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-i18next": "https://aistudiocdn.com/react-i18next@^16.3.3"
   }
 }
 </script>
