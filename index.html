@@ -1148,35 +1148,6 @@
             text-decoration: underline;
         }
 
-        /* Google Translate Widget */
-        #google_translate_element {
-            display: flex;
-            align-items: center;
-        }
-        .goog-te-gadget-simple {
-            background-color: transparent !important;
-            border: none !important;
-        }
-        .goog-te-gadget-simple .goog-te-menu-value span {
-            color: var(--primary-text-color) !important;
-        }
-        select.goog-te-combo {
-            background-color: var(--surface-color);
-            color: var(--primary-text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.4rem 0.6rem;
-            font-family: inherit;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .goog-te-banner-frame.skiptranslate {
-            display: none !important;
-        } 
-        body {
-            top: 0px !important; 
-        }
-
         /* Notification System */
         .notifications-container {
             position: fixed;
@@ -1249,9 +1220,6 @@
                 order: 3;
                 gap: 1rem;
                 margin-left: auto;
-            }
-            #google_translate_element {
-                display: none; /* Hide on mobile header for simplicity, can be added to mobile menu */
             }
             .search-container {
                 display: flex;
@@ -1360,11 +1328,5 @@
 <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-          new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'en,no', layout: google.translate.TranslateElement.InlineLayout.SIMPLE, autoDisplay: false}, 'google_translate_element');
-        }
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
